@@ -1,39 +1,49 @@
 // ============================================
-//  DEVANSHI'S ART GALLERY — gallery.js v2
-//  Loads drawings from Supabase
-//  Security: read-only anon key, RLS enforced
+//  DEVANSHI'S ART GALLERY — gallery.js v3
+//  Gallery + Reactions + Comments
 // ============================================
 
-// ─────────────────────────────────────────────
-//  🔑 YOUR KEYS — fill these in
-//  These are READ-ONLY public keys. Safe to
-//  put in frontend JS. Supabase RLS policies
-//  ensure nobody can write via these keys.
-// ─────────────────────────────────────────────
-const SUPABASE_URL     = 'https://uckmsrzxdgrgbrzfyjlo.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_CHAdpej3qa2VCrvEHhJb3A_vtswSy2a';
+// ── YOUR KEYS ──
+const SUPABASE_URL      = 'ADD_YOUR_SUPABASE_URL_HERE';
+const SUPABASE_ANON_KEY = 'ADD_YOUR_SUPABASE_ANON_KEY_HERE';
 
-const TABLE   = 'drawings';
-const STRIPES = ['pink','yellow','purple','teal','orange','green'];
+const TABLE    = 'drawings';
+const STRIPES  = ['pink','yellow','purple','teal','orange','green'];
 
-// ─────────────────────────────────────────────
-//  Boot
-// ─────────────────────────────────────────────
+// Rotating confidence booster messages shown in modal
+const BOOSTS = [
+  '🌟 Wow, this is truly incredible artwork!',
+  '🎨 You have the eye of a real artist, Devanshi!',
+  '💫 This drawing made everyone smile today!',
+  '🏆 Museum-worthy! This belongs in a gallery!',
+  '🌈 Your colours are absolutely magical!',
+  '✨ Every detail shows how talented you are!',
+  '🦋 This is breathtakingly beautiful!',
+  '🎉 You should be SO proud of this masterpiece!',
+];
+
+// Track which drawing is open in the modal
+let activeDrawing = null;
+
+// ── Boot ──
 document.addEventListener('DOMContentLoaded', loadGallery);
 
+// ============================================
+//  LOAD GALLERY
+// ============================================
 async function loadGallery() {
   const grid    = document.getElementById('gallery-grid');
   const loading = document.getElementById('loading');
   const empty   = document.getElementById('empty-state');
   const errEl   = document.getElementById('error-state');
-  const errText = document.getElementById('error-detail');
+  const errTxt  = document.getElementById('error-detail');
   const count   = document.getElementById('drawing-count');
+  const reactEl = document.getElementById('total-reactions');
 
-  // ── Guard: keys not yet configured ──
   if (SUPABASE_URL.includes('ADD_YOUR')) {
     loading.style.display = 'none';
     errEl.style.display   = 'block';
-    errText.textContent   = 'Add your Supabase keys to gallery.js first!';
+    errTxt.textContent    = 'Add your Supabase keys to gallery.js first!';
     return;
   }
 
@@ -41,97 +51,260 @@ async function loadGallery() {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/${TABLE}?order=created_at.desc&select=*`,
       {
-        headers: {
-          'apikey':        SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        // Abort after 10 seconds
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         signal: AbortSignal.timeout(10000),
       }
     );
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Supabase returned ${res.status}: ${body}`);
-    }
+    if (!res.ok) throw new Error(`Supabase ${res.status}`);
 
     const drawings = await res.json();
-
     loading.style.display = 'none';
 
-    if (!drawings.length) {
-      empty.style.display = 'block';
-      count.textContent   = '0';
-      return;
-    }
+    if (!drawings.length) { empty.style.display = 'block'; count.textContent = '0'; return; }
 
-    // Update stats bar count
-    count.textContent = drawings.length;
+    // Total reactions across all drawings
+    let totalR = 0;
+    drawings.forEach(d => {
+      const r = d.reactions || {};
+      totalR += (r.heart||0) + (r.clap||0) + (r.star||0) + (r.fire||0);
+    });
+    count.textContent   = drawings.length;
+    reactEl.textContent = totalR || '0';
 
-    // Build grid
     grid.style.display = 'grid';
     drawings.forEach((d, i) => grid.appendChild(buildCard(d, i)));
 
   } catch (err) {
-    console.error('Gallery load error:', err);
+    console.error(err);
     loading.style.display = 'none';
     errEl.style.display   = 'block';
-    if (err.name === 'TimeoutError') {
-      errText.textContent = 'Request timed out — check your internet connection.';
-    } else {
-      errText.textContent = err.message;
-    }
+    errTxt.textContent    = err.name === 'TimeoutError' ? 'Request timed out.' : err.message;
   }
 }
 
-// ─────────────────────────────────────────────
-//  Build a card DOM element
-// ─────────────────────────────────────────────
+// ============================================
+//  BUILD CARD
+// ============================================
 function buildCard(drawing, index) {
   const stripe = STRIPES[index % STRIPES.length];
-  const date   = new Date(drawing.created_at).toLocaleDateString('en-IN', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  });
+  const date   = new Date(drawing.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  const r      = drawing.reactions || { heart:0, clap:0, star:0, fire:0 };
+  const total  = (r.heart||0)+(r.clap||0)+(r.star||0)+(r.fire||0);
 
   const card = document.createElement('article');
   card.className = `drawing-card stripe-${stripe}`;
-
-  // Small gallery-style number tag
-  const tagNum = index + 1;
+  card.onclick   = () => openModal(drawing);
 
   card.innerHTML = `
     <div class="card-img-wrap">
-      <img
-        src="${safe(drawing.image_url)}"
-        alt="${safe(drawing.title)}"
-        loading="lazy"
-        onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;color:#ccc;\'>🖼️</div>'"
-      />
+      <img src="${safe(drawing.image_url)}" alt="${safe(drawing.title)}" loading="lazy"
+        onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;\\'>🖼️</div>'"/>
     </div>
     <div class="card-body">
       <div class="card-title">${safe(drawing.title)}</div>
       <div class="card-footer">
-        ${drawing.artist_name
-          ? `<span class="card-artist">✏️ ${safe(drawing.artist_name)}</span>`
-          : '<span></span>'}
+        ${drawing.artist_name ? `<span class="card-artist">✏️ ${safe(drawing.artist_name)}</span>` : '<span></span>'}
         <span class="card-date">${date}</span>
       </div>
     </div>
-    <div class="card-tag">${tagNum}</div>
+    ${total > 0 ? `
+    <div class="card-reactions">
+      ${r.heart ? `<span class="card-reaction-pill">❤️ ${r.heart}</span>` : ''}
+      ${r.clap  ? `<span class="card-reaction-pill">👏 ${r.clap}</span>`  : ''}
+      ${r.star  ? `<span class="card-reaction-pill">⭐ ${r.star}</span>`  : ''}
+      ${r.fire  ? `<span class="card-reaction-pill">🔥 ${r.fire}</span>`  : ''}
+    </div>` : ''}
+    <div class="card-tag">${index + 1}</div>
   `;
-
   return card;
 }
 
-// ─────────────────────────────────────────────
-//  Escape HTML — prevents XSS
-// ─────────────────────────────────────────────
+// ============================================
+//  MODAL — open
+// ============================================
+function openModal(drawing) {
+  activeDrawing = drawing;
+  const r = drawing.reactions || { heart:0, clap:0, star:0, fire:0 };
+
+  document.getElementById('modal-img').src         = drawing.image_url;
+  document.getElementById('modal-title').textContent = drawing.title;
+  document.getElementById('modal-date').textContent  = new Date(drawing.created_at)
+    .toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+
+  const artist = document.getElementById('modal-artist');
+  artist.textContent = drawing.artist_name ? `✏️ ${drawing.artist_name}` : '';
+
+  // Random confidence booster
+  document.getElementById('boost-msg').textContent =
+    BOOSTS[Math.floor(Math.random() * BOOSTS.length)];
+
+  // Set reaction counts
+  document.getElementById('count-heart').textContent = r.heart || 0;
+  document.getElementById('count-clap').textContent  = r.clap  || 0;
+  document.getElementById('count-star').textContent  = r.star  || 0;
+  document.getElementById('count-fire').textContent  = r.fire  || 0;
+
+  // Reset reacted state
+  ['heart','clap','star','fire'].forEach(k =>
+    document.getElementById(`btn-${k}`).classList.remove('reacted')
+  );
+
+  // Load comments
+  loadComments(drawing.id);
+
+  document.getElementById('modal-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+// Close when clicking outside modal card
+function closeModal(e) {
+  if (e.target.id === 'modal-overlay') {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+// ============================================
+//  REACTIONS
+// ============================================
+async function react(type) {
+  if (!activeDrawing) return;
+
+  const btn = document.getElementById(`btn-${type}`);
+  const countEl = document.getElementById(`count-${type}`);
+
+  // Toggle: if already reacted, undo
+  const alreadyReacted = btn.classList.contains('reacted');
+  const delta = alreadyReacted ? -1 : 1;
+
+  // Optimistic UI update
+  btn.classList.toggle('reacted', !alreadyReacted);
+  const newCount = Math.max(0, parseInt(countEl.textContent) + delta);
+  countEl.textContent = newCount;
+
+  // Animate emoji
+  const emoji = btn.querySelector('.reaction-emoji');
+  emoji.style.transform = 'scale(1.6)';
+  setTimeout(() => emoji.style.transform = '', 300);
+
+  // Update in Supabase
+  try {
+    const current = activeDrawing.reactions || { heart:0, clap:0, star:0, fire:0 };
+    current[type] = Math.max(0, (current[type] || 0) + delta);
+    activeDrawing.reactions = current;
+
+    await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${activeDrawing.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ reactions: current }),
+    });
+
+    // Refresh total reactions in stats bar
+    const reactEl = document.getElementById('total-reactions');
+    const r = activeDrawing.reactions;
+    const total = (r.heart||0)+(r.clap||0)+(r.star||0)+(r.fire||0);
+    reactEl.textContent = total;
+
+  } catch(err) {
+    console.error('Reaction save failed:', err);
+    // Rollback UI
+    btn.classList.toggle('reacted', alreadyReacted);
+    countEl.textContent = parseInt(countEl.textContent) - delta;
+  }
+}
+
+// ============================================
+//  COMMENTS — load
+// ============================================
+async function loadComments(drawingId) {
+  const list = document.getElementById('comments-list');
+  list.innerHTML = '<p class="no-comments">Loading messages...</p>';
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/comments?drawing_id=eq.${drawingId}&order=created_at.asc`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+    );
+
+    if (!res.ok) throw new Error('Could not load comments');
+    const comments = await res.json();
+
+    if (!comments.length) {
+      list.innerHTML = '<p class="no-comments">No messages yet — be the first! 🌟</p>';
+      return;
+    }
+
+    list.innerHTML = comments.map(c => `
+      <div class="comment-bubble">
+        <div class="comment-name">${safe(c.author_name)}</div>
+        <div class="comment-text">${safe(c.message)}</div>
+        <div class="comment-time">${new Date(c.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</div>
+      </div>
+    `).join('');
+
+  } catch(err) {
+    list.innerHTML = '<p class="no-comments">Could not load messages. Make sure the comments table exists!</p>';
+  }
+}
+
+// ============================================
+//  COMMENTS — submit
+// ============================================
+async function submitComment() {
+  if (!activeDrawing) return;
+
+  const name    = sanitize(document.getElementById('comment-name').value.trim());
+  const message = sanitize(document.getElementById('comment-text').value.trim());
+  const btn     = document.querySelector('.btn-comment');
+
+  if (!name)    { alert('Please enter your name! 😊'); return; }
+  if (!message) { alert('Please write a message! 💬'); return; }
+
+  btn.disabled     = true;
+  btn.textContent  = 'Sending... 💌';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comments`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ drawing_id: activeDrawing.id, author_name: name, message }),
+    });
+
+    if (!res.ok) throw new Error('Could not save comment');
+
+    // Clear form
+    document.getElementById('comment-name').value = '';
+    document.getElementById('comment-text').value = '';
+
+    // Reload comments
+    await loadComments(activeDrawing.id);
+
+  } catch(err) {
+    alert('Could not send message: ' + err.message);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Send message 💌';
+  }
+}
+
+// ============================================
+//  HELPERS
+// ============================================
 function safe(str) {
   if (!str) return '';
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#x27;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 }
+
+function sanitize(str) { return str.replace(/<[^>]*>/g,'').trim(); }
