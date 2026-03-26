@@ -832,9 +832,9 @@ nav { display: flex; align-items: center; gap: 8px; }
   background: rgba(28,28,46,0.75);
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: 20px 16px 40px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   overflow-y: auto;
@@ -847,7 +847,7 @@ nav { display: flex; align-items: center; gap: 8px; }
   width: 100%;
   position: relative;
   box-shadow: 0 24px 80px rgba(0,0,0,0.3);
-  overflow: hidden;
+  overflow: visible;
   animation: modalPop 0.3s cubic-bezier(.34,1.56,.64,1);
   margin: auto;
 }
@@ -880,6 +880,7 @@ nav { display: flex; align-items: center; gap: 8px; }
   background: #F8F4FF;
   display: block;
   padding: 48px 16px 16px;
+  border-radius: 24px 24px 0 0;
 }
 
 .modal-body { padding: 20px 24px 28px; }
