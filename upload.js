@@ -13,11 +13,11 @@
 // ─────────────────────────────────────────────
 //  🔑 YOUR KEYS — fill these in
 // ─────────────────────────────────────────────
-const SUPABASE_URL      = 'ADD_YOUR_SUPABASE_URL_HERE';
-const SUPABASE_ANON_KEY = 'ADD_YOUR_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_URL      = 'https://supabase.com/dashboard/project/uckmsrzxdgrgbrzfyjlo';
+const SUPABASE_ANON_KEY = 'sb_publishable_CHAdpej3qa2VCrvEHhJb3A_vtswSy2a';
 
-const CLOUDINARY_CLOUD_NAME    = 'ADD_YOUR_CLOUDINARY_CLOUD_NAME_HERE';
-const CLOUDINARY_UPLOAD_PRESET = 'ADD_YOUR_CLOUDINARY_UPLOAD_PRESET_HERE';
+const CLOUDINARY_CLOUD_NAME    = 'dyjhmbfk2';
+const CLOUDINARY_UPLOAD_PRESET = 'Art Gallery';
 
 // ─────────────────────────────────────────────
 //  🔐 UPLOAD PASSWORD
