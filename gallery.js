@@ -10,7 +10,7 @@
 //  put in frontend JS. Supabase RLS policies
 //  ensure nobody can write via these keys.
 // ─────────────────────────────────────────────
-const SUPABASE_URL     = 'https://supabase.com/dashboard/project/uckmsrzxdgrgbrzfyjlo';
+const SUPABASE_URL     = 'https://uckmsrzxdgrgbrzfyjlo.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_CHAdpej3qa2VCrvEHhJb3A_vtswSy2a';
 
 const TABLE   = 'drawings';
