@@ -4,11 +4,14 @@
 // ============================================
 
 // ── YOUR KEYS ──
-const SUPABASE_URL      = 'https://uckmsrzxdgrgbrzfyjlo.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_CHAdpej3qa2VCrvEHhJb3A_vtswSy2a';
+const SUPABASE_URL      = 'ADD_YOUR_SUPABASE_URL_HERE';
+const SUPABASE_ANON_KEY = 'ADD_YOUR_SUPABASE_ANON_KEY_HERE';
 
 const TABLE    = 'drawings';
 const STRIPES  = ['pink','yellow','purple','teal','orange','green'];
+
+// Store all drawings so cards can reference by index
+let drawings = [];
 
 // Rotating confidence booster messages shown in modal
 const BOOSTS = [
@@ -57,7 +60,8 @@ async function loadGallery() {
     );
     if (!res.ok) throw new Error(`Supabase ${res.status}`);
 
-    const drawings = await res.json();
+    const data = await res.json();
+    drawings = data;
     loading.style.display = 'none';
 
     if (!drawings.length) { empty.style.display = 'block'; count.textContent = '0'; return; }
@@ -89,31 +93,40 @@ function buildCard(drawing, index) {
   const stripe = STRIPES[index % STRIPES.length];
   const date   = new Date(drawing.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
   const r      = drawing.reactions || { heart:0, clap:0, star:0, fire:0 };
-  const total  = (r.heart||0)+(r.clap||0)+(r.star||0)+(r.fire||0);
 
   const card = document.createElement('article');
   card.className = `drawing-card stripe-${stripe}`;
-  card.onclick   = () => openModal(drawing);
 
   card.innerHTML = `
-    <div class="card-img-wrap">
+    <div class="card-img-wrap" onclick="openModal(drawings[${index}])">
       <img src="${safe(drawing.image_url)}" alt="${safe(drawing.title)}" loading="lazy"
         onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;\\'>🖼️</div>'"/>
     </div>
-    <div class="card-body">
+    <div class="card-body" onclick="openModal(drawings[${index}])">
       <div class="card-title">${safe(drawing.title)}</div>
       <div class="card-footer">
         ${drawing.artist_name ? `<span class="card-artist">✏️ ${safe(drawing.artist_name)}</span>` : '<span></span>'}
         <span class="card-date">${date}</span>
       </div>
     </div>
-    ${total > 0 ? `
     <div class="card-reactions">
-      ${r.heart ? `<span class="card-reaction-pill">❤️ ${r.heart}</span>` : ''}
-      ${r.clap  ? `<span class="card-reaction-pill">👏 ${r.clap}</span>`  : ''}
-      ${r.star  ? `<span class="card-reaction-pill">⭐ ${r.star}</span>`  : ''}
-      ${r.fire  ? `<span class="card-reaction-pill">🔥 ${r.fire}</span>`  : ''}
-    </div>` : ''}
+      <button class="card-react-btn" id="card-heart-${drawing.id}" onclick="cardReact(event, ${index}, 'heart')">
+        <span class="card-react-emoji">❤️</span>
+        <span class="card-react-count" id="card-count-heart-${drawing.id}">${r.heart||0}</span>
+      </button>
+      <button class="card-react-btn" id="card-clap-${drawing.id}" onclick="cardReact(event, ${index}, 'clap')">
+        <span class="card-react-emoji">👏</span>
+        <span class="card-react-count" id="card-count-clap-${drawing.id}">${r.clap||0}</span>
+      </button>
+      <button class="card-react-btn" id="card-star-${drawing.id}" onclick="cardReact(event, ${index}, 'star')">
+        <span class="card-react-emoji">⭐</span>
+        <span class="card-react-count" id="card-count-star-${drawing.id}">${r.star||0}</span>
+      </button>
+      <button class="card-react-btn" id="card-fire-${drawing.id}" onclick="cardReact(event, ${index}, 'fire')">
+        <span class="card-react-emoji">🔥</span>
+        <span class="card-react-count" id="card-count-fire-${drawing.id}">${r.fire||0}</span>
+      </button>
+    </div>
     <div class="card-tag">${index + 1}</div>
   `;
   return card;
@@ -165,7 +178,63 @@ function closeModal(e) {
 }
 
 // ============================================
-//  REACTIONS
+//  CARD REACT — react directly from grid
+//  (stops click propagating to open modal)
+// ============================================
+async function cardReact(event, drawingIndex, type) {
+  event.stopPropagation(); // don't open modal
+  const drawing = drawings[drawingIndex];
+  if (!drawing) return;
+
+  const btn      = document.getElementById(`card-${type}-${drawing.id}`);
+  const countEl  = document.getElementById(`card-count-${type}-${drawing.id}`);
+  const alreadyReacted = btn.classList.contains('reacted');
+  const delta    = alreadyReacted ? -1 : 1;
+
+  // Optimistic UI
+  btn.classList.toggle('reacted', !alreadyReacted);
+  const newCount = Math.max(0, parseInt(countEl.textContent) + delta);
+  countEl.textContent = newCount;
+
+  // Animate
+  const emoji = btn.querySelector('.card-react-emoji');
+  emoji.style.transform = 'scale(1.5)';
+  setTimeout(() => emoji.style.transform = '', 250);
+
+  // Save to Supabase
+  try {
+    const current = drawing.reactions || { heart:0, clap:0, star:0, fire:0 };
+    current[type] = Math.max(0, (current[type] || 0) + delta);
+    drawing.reactions = current;
+
+    await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${drawing.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ reactions: current }),
+    });
+
+    // Update total reactions in stats bar
+    let totalR = 0;
+    drawings.forEach(d => {
+      const r = d.reactions || {};
+      totalR += (r.heart||0)+(r.clap||0)+(r.star||0)+(r.fire||0);
+    });
+    document.getElementById('total-reactions').textContent = totalR;
+
+  } catch(err) {
+    console.error('Card react failed:', err);
+    btn.classList.toggle('reacted', alreadyReacted);
+    countEl.textContent = parseInt(countEl.textContent) - delta;
+  }
+}
+
+// ============================================
+//  MODAL REACTIONS — react from inside modal
 // ============================================
 async function react(type) {
   if (!activeDrawing) return;
