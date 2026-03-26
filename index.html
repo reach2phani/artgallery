@@ -95,6 +95,23 @@
         <div class="boost-banner">
           <span id="boost-msg" class="boost-msg"></span>
         </div>
+
+        <!-- Share buttons -->
+        <div class="share-bar">
+          <span class="share-label">Share this drawing:</span>
+          <div class="share-btns">
+            <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">
+              <span class="share-icon">💬</span> WhatsApp
+            </button>
+            <button class="share-btn share-copy" onclick="copyLink()" id="copy-btn">
+              <span class="share-icon">🔗</span> Copy link
+            </button>
+            <button class="share-btn share-native" onclick="shareNative()" id="native-share-btn" style="display:none">
+              <span class="share-icon">📤</span> Share
+            </button>
+          </div>
+        </div>
+
         <div class="reaction-bar">
           <button class="reaction-btn" onclick="react('heart')" id="btn-heart">
             <span class="reaction-emoji">❤️</span>

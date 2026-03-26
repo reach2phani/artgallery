@@ -4,8 +4,8 @@
 // ============================================
 
 // ── YOUR KEYS ──
-const SUPABASE_URL      = 'https://uckmsrzxdgrgbrzfyjlo.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_CHAdpej3qa2VCrvEHhJb3A_vtswSy2a';
+const SUPABASE_URL      = 'ADD_YOUR_SUPABASE_URL_HERE';
+const SUPABASE_ANON_KEY = 'ADD_YOUR_SUPABASE_ANON_KEY_HERE';
 
 const TABLE    = 'drawings';
 const STRIPES  = ['pink','yellow','purple','teal','orange','green'];
@@ -78,6 +78,9 @@ async function loadGallery() {
     grid.style.display = 'grid';
     drawings.forEach((d, i) => grid.appendChild(buildCard(d, i)));
 
+    // Auto-open drawing if URL has ?drawing=ID
+    checkDeepLink();
+
   } catch (err) {
     console.error(err);
     loading.style.display = 'none';
@@ -101,6 +104,7 @@ function buildCard(drawing, index) {
     <div class="card-img-wrap" onclick="openModal(drawings[${index}])">
       <img src="${safe(drawing.image_url)}" alt="${safe(drawing.title)}" loading="lazy"
         onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;\\'>🖼️</div>'"/>
+      <button class="card-share-btn" onclick="quickShare(event, ${index})" title="Share this drawing">📤</button>
     </div>
     <div class="card-body" onclick="openModal(drawings[${index}])">
       <div class="card-title">${safe(drawing.title)}</div>
@@ -165,6 +169,13 @@ function openModal(drawing) {
   // Load comments
   loadComments(drawing.id);
 
+  // Update URL so this drawing is shareable
+  history.replaceState(null, '', `?drawing=${drawing.id}`);
+
+  // Show native share button only if browser supports it (mobile)
+  const nativeBtn = document.getElementById('native-share-btn');
+  if (navigator.share) nativeBtn.style.display = 'inline-flex';
+
   document.getElementById('modal-overlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -174,6 +185,106 @@ function closeModal(e) {
   if (e.target.id === 'modal-overlay') {
     document.getElementById('modal-overlay').style.display = 'none';
     document.body.style.overflow = '';
+    // Clear the ?drawing= param from URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+// ============================================
+//  DEEP LINK — auto-open drawing from URL
+//  e.g. index.html?drawing=42
+// ============================================
+function checkDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const id     = params.get('drawing');
+  if (!id) return;
+  const drawing = drawings.find(d => String(d.id) === String(id));
+  if (drawing) openModal(drawing);
+}
+
+// ============================================
+//  SHARE FUNCTIONS
+// ============================================
+
+// Build the shareable URL for a drawing
+function buildShareUrl(drawing) {
+  return `${window.location.origin}${window.location.pathname}?drawing=${drawing.id}`;
+}
+
+// Build the share message text
+function buildShareText(drawing) {
+  return `🎨 Look at this amazing drawing by Devanshi!\n\n"${drawing.title}"\n\n`;
+}
+
+// WhatsApp share
+function shareWhatsApp() {
+  if (!activeDrawing) return;
+  const text = buildShareText(activeDrawing) + buildShareUrl(activeDrawing);
+  const url  = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+}
+
+// Copy link to clipboard
+async function copyLink() {
+  if (!activeDrawing) return;
+  const url = buildShareUrl(activeDrawing);
+  try {
+    await navigator.clipboard.writeText(url);
+    const btn = document.getElementById('copy-btn');
+    btn.innerHTML = '<span class="share-icon">✅</span> Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerHTML = '<span class="share-icon">🔗</span> Copy link';
+      btn.classList.remove('copied');
+    }, 2500);
+  } catch {
+    // Fallback for older browsers
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    document.getElementById('copy-btn').innerHTML = '<span class="share-icon">✅</span> Copied!';
+  }
+}
+
+// Native share (phone share sheet — iOS/Android)
+function shareNative() {
+  if (!activeDrawing || !navigator.share) return;
+  navigator.share({
+    title: `Devanshi's drawing: ${activeDrawing.title}`,
+    text:  buildShareText(activeDrawing),
+    url:   buildShareUrl(activeDrawing),
+  }).catch(() => {});
+}
+
+// Quick share from card (without opening modal)
+function quickShare(event, index) {
+  event.stopPropagation();
+  const drawing = drawings[index];
+  if (!drawing) return;
+
+  const url  = buildShareUrl(drawing);
+  const text = buildShareText(drawing) + url;
+
+  // Use native share on mobile if available
+  if (navigator.share) {
+    navigator.share({
+      title: `Devanshi's drawing: ${drawing.title}`,
+      text:  buildShareText(drawing),
+      url,
+    }).catch(() => {});
+  } else {
+    // Fallback: copy to clipboard
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = event.currentTarget;
+      btn.textContent = '✅';
+      setTimeout(() => btn.textContent = '📤', 2000);
+    }).catch(() => {
+      // Last resort: WhatsApp
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    });
   }
 }
 
