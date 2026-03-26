@@ -25,7 +25,7 @@ const CLOUDINARY_UPLOAD_PRESET = 'ADD_YOUR_CLOUDINARY_UPLOAD_PRESET_HERE';
 //  Keep it simple — something your family
 //  can remember. e.g. 'devanshi2024'
 // ─────────────────────────────────────────────
-const UPLOAD_PASSWORD = 'ADD_YOUR_PASSWORD_HERE';
+const UPLOAD_PASSWORD = 'devanshi2016';
 
 // ─────────────────────────────────────────────
 //  Config
