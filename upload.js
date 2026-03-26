@@ -244,7 +244,7 @@ async function uploadToCloudinary(file) {
   fd.append('folder', 'devanshi-art-gallery');
 
   // Restrict what Cloudinary will accept
-  fd.append('allowed_formats', 'jpg,png,gif,webp');
+  //fd.append('allowed_formats', 'jpg,png,gif,webp');
 
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
