@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Devanshi's Art Gallery 🎨</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Floating paint splotch decorations -->
+  <div class="deco deco-1"></div>
+  <div class="deco deco-2"></div>
+  <div class="deco deco-3"></div>
+  <div class="deco deco-4"></div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-palette">🎨</span>
+        <span class="logo-text">Devanshi's Art Gallery</span>
+      </a>
+      <nav>
+        <a href="index.html" class="nav-link nav-active">Gallery</a>
+        <a href="upload.html" class="nav-link nav-upload">+ Add Drawing</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">✨ The World's Greatest Little Artist ✨</div>
+      <h1 class="hero-title">
+        Welcome to<br/>
+        <span class="hero-highlight">Devanshi's</span><br/>
+        Art World!
+      </h1>
+      <p class="hero-sub">Every crayon stroke. Every burst of colour. Every masterpiece.</p>
+      <div class="hero-squiggles">
+        <svg width="320" height="24" viewBox="0 0 320 24" fill="none">
+          <path d="M0 12 Q20 0 40 12 Q60 24 80 12 Q100 0 120 12 Q140 24 160 12 Q180 0 200 12 Q220 24 240 12 Q260 0 280 12 Q300 24 320 12" stroke="#FF6B9D" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <!-- Big floating emoji art elements -->
+    <div class="hero-floaties">
+      <span class="floaty f1">🖍️</span>
+      <span class="floaty f2">⭐</span>
+      <span class="floaty f3">🌈</span>
+      <span class="floaty f4">🖌️</span>
+      <span class="floaty f5">💫</span>
+    </div>
+  </section>
+
+  <!-- ===== STATS BAR ===== -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat">
+        <span class="stat-num" id="drawing-count">—</span>
+        <span class="stat-label">Masterpieces</span>
+      </div>
+      <div class="stat-dot"></div>
+      <div class="stat">
+        <span class="stat-num">∞</span>
+        <span class="stat-label">Creativity</span>
+      </div>
+      <div class="stat-dot"></div>
+      <div class="stat">
+        <span class="stat-num">💯</span>
+        <span class="stat-label">Amazing</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GALLERY ===== -->
+  <main class="gallery-section">
+
+    <!-- Loading -->
+    <div id="loading" class="loading-wrap">
+      <div class="paint-loader">
+        <div class="paint-drop pd1"></div>
+        <div class="paint-drop pd2"></div>
+        <div class="paint-drop pd3"></div>
+      </div>
+      <p class="loading-text">Loading Devanshi's masterpieces...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-art">🖼️</div>
+      <h2>The gallery awaits!</h2>
+      <p>No drawings yet — be the first to add one!</p>
+      <a href="upload.html" class="btn-primary">Add First Drawing</a>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" class="error-state" style="display:none">
+      <div class="empty-art">⚠️</div>
+      <h2>Couldn't load drawings</h2>
+      <p id="error-detail">Check your Supabase keys in gallery.js</p>
+    </div>
+
+    <!-- Grid -->
+    <div id="gallery-grid" class="gallery-grid" style="display:none"></div>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="footer-heart">Made with 💖 for Devanshi</span>
+      <span class="footer-dot">·</span>
+      <span>Keep drawing, keep creating!</span>
+    </div>
+  </footer>
+
+  <script src="gallery.js"></script>
+</body>
+</html>

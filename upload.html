@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add a Drawing 🖍️ | Devanshi's Art Gallery</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="deco deco-1"></div>
+  <div class="deco deco-3"></div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-palette">🎨</span>
+        <span class="logo-text">Devanshi's Art Gallery</span>
+      </a>
+      <nav>
+        <a href="index.html" class="nav-link">Gallery</a>
+        <a href="upload.html" class="nav-link nav-upload nav-active">+ Add Drawing</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="upload-main">
+
+    <!-- ===== PASSWORD GATE (shown first) ===== -->
+    <div id="password-gate" class="gate-wrap">
+      <div class="gate-card">
+        <div class="gate-icon">🔐</div>
+        <h1 class="gate-title">Family Only!</h1>
+        <p class="gate-sub">Enter the secret password to add a drawing</p>
+        <div class="gate-form">
+          <input
+            type="password"
+            id="gate-password"
+            class="gate-input"
+            placeholder="Enter password..."
+            autocomplete="current-password"
+          />
+          <button onclick="checkPassword()" class="btn-primary gate-btn">Let me in! 🚀</button>
+        </div>
+        <div id="gate-error" class="gate-error" style="display:none">
+          ❌ Wrong password! Try again.
+        </div>
+        <p class="gate-hint">Ask a grown-up for the password 😊</p>
+      </div>
+    </div>
+
+    <!-- ===== UPLOAD FORM (shown after correct password) ===== -->
+    <div id="upload-section" class="upload-wrap" style="display:none">
+      <div class="upload-card">
+
+        <div class="upload-heading">
+          <h1>Add a New Drawing! 🖍️</h1>
+          <p>Share Devanshi's latest masterpiece</p>
+        </div>
+
+        <!-- Success message -->
+        <div id="success-msg" class="success-msg" style="display:none">
+          <div class="success-burst">🎉</div>
+          <h2>Woohoo! It's in the gallery!</h2>
+          <p>The masterpiece is now live for everyone to see!</p>
+          <div class="success-btns">
+            <a href="index.html" class="btn-primary">See Gallery</a>
+            <button onclick="resetForm()" class="btn-ghost">Add Another</button>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div id="upload-error" class="upload-error-msg" style="display:none">
+          <span id="upload-error-text">Something went wrong.</span>
+        </div>
+
+        <!-- The form -->
+        <div id="upload-form">
+
+          <!-- Drop zone -->
+          <div id="drop-zone" class="drop-zone">
+            <div id="drop-content" class="drop-content">
+              <div class="drop-icon-wrap">
+                <span class="drop-main-icon">🖼️</span>
+                <span class="drop-plus">+</span>
+              </div>
+              <p class="drop-title">Drop a drawing here</p>
+              <p class="drop-or"><span>or</span></p>
+              <button type="button" onclick="document.getElementById('file-input').click()" class="btn-choose">Choose File</button>
+              <p class="drop-hint">JPG · PNG · GIF · WEBP &nbsp;·&nbsp; Max 10 MB</p>
+            </div>
+            <!-- Preview replaces drop content -->
+            <div id="preview-wrap" class="preview-wrap" style="display:none">
+              <img id="image-preview" class="image-preview" alt="Preview"/>
+              <button type="button" onclick="clearImage()" class="preview-clear" title="Remove">✕</button>
+            </div>
+            <input type="file" id="file-input" accept="image/*" style="display:none"/>
+          </div>
+
+          <!-- Title -->
+          <div class="field-group">
+            <label class="field-label" for="drawing-title">Drawing Title ✏️</label>
+            <input type="text" id="drawing-title" class="field-input" placeholder="e.g. My Rainbow Cat" maxlength="100" required/>
+          </div>
+
+          <!-- Artist name -->
+          <div class="field-group">
+            <label class="field-label" for="artist-name">Artist Name 🌟</label>
+            <input type="text" id="artist-name" class="field-input" placeholder="e.g. Devanshi" maxlength="60" value="Devanshi"/>
+          </div>
+
+          <!-- Submit -->
+          <button id="submit-btn" onclick="handleUpload()" class="btn-upload" type="button">
+            <span id="btn-text">Upload to Gallery 🚀</span>
+            <span id="btn-loading" style="display:none">Uploading... ⏳</span>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="footer-heart">Made with 💖 for Devanshi</span>
+      <span class="footer-dot">·</span>
+      <span>Keep drawing, keep creating!</span>
+    </div>
+  </footer>
+
+  <script src="upload.js"></script>
+</body>
+</html>
